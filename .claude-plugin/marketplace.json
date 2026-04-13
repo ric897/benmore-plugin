@@ -1,11 +1,10 @@
 {
   "name": "benmore",
   "description": "Benmore plugin marketplace — workflow skills + the hosted Benmore MCP server.",
-  "metadata": {
-    "author": {
-      "name": "Benmore",
-      "url": "https://benmore.ai"
-    }
+  "owner": {
+    "name": "Benmore",
+    "email": "support@benmore.tech",
+    "url": "https://benmore.ai"
   },
   "plugins": [
     {
