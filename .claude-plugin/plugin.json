@@ -1,0 +1,12 @@
+{
+  "name": "benmore",
+  "version": "0.2.0",
+  "description": "Build, iterate, and ship Benmore apps from Claude. 5-phase opinionated build flow (Discover → Plan → Map → Design → Build) with skills + the hosted Benmore MCP server.",
+  "author": {
+    "name": "Benmore",
+    "url": "https://benmore.ai"
+  },
+  "homepage": "https://benmore.ai",
+  "repository": "https://github.com/ric897/benmore-plugin",
+  "license": "Proprietary"
+}
