@@ -2,7 +2,7 @@
   "mcpServers": {
     "benmore": {
       "type": "http",
-      "url": "https://mcp.benmore.ai/mcp"
+      "url": "https://benmore.ai/mcp"
     }
   }
 }
