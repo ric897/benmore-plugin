@@ -143,11 +143,30 @@ When approved: `save_plan(... status: "approved")`.
 
 ---
 
-## Phase 3: MAP (the journey)
+## Phase 3: MAP (the journeys)
 
-**Goal:** Model every user flow as a journey graph. This is the spec — pages, entities, roles, transitions.
+**Goal:** Model every user flow as a journey graph. The journey IS the spec — pages, entities, roles, transitions.
 
-**Critical: include data-flow edges, not just navigation edges.** The design phase reads these to wire forms, queries, and links automatically. Every page that touches an entity needs the right edge:
+### One journey vs many: use the JTBD heuristic
+
+A **journey = one Job-To-Be-Done** (one cohesive user goal with one trigger). Don't put the whole app in one journey, and don't make a journey per page. Use this table:
+
+| App complexity | Journey count |
+|---|---|
+| Single-purpose tool (todo, calculator, blog) | **1** |
+| Tool with 2–3 cohesive flows (CRM with auth + pipeline) | **2–3** |
+| Real product with distinct user goals (CRM, onboarding, billing, admin, reports) | **5–8** |
+| Multi-role marketplace (Uber/Airbnb shape) | **One per role × top-level flow** (10–15) |
+
+**Split into separate journeys when:** different triggers, different lifecycle stages (one-time vs daily), share <30% of pages, or merged would be >25 nodes.
+
+**Keep in ONE journey when:** flows always run in sequence (signup → email verify → first login is ONE journey), or one is a 1-click variant of another (forgot password = part of Auth).
+
+The system pools across journeys for analysis — `get_journey_for_design`, `get_journey_design_drift`, `build_app` all see every node from every journey as one design surface. Each item is tagged with its `source_journey` so you know which sub-flow it belongs to. Multi-journey is first-class, not a workaround.
+
+### Critical: include data-flow edges, not just navigation edges
+
+The design phase reads these to wire forms, queries, and links automatically. Every page that touches an entity needs the right edge:
 
 - Page creates rows → `edge_type: "creates"` from page → entity
 - Page updates rows → `edge_type: "updates"` from page → entity
@@ -155,6 +174,10 @@ When approved: `save_plan(... status: "approved")`.
 - Page deletes rows → `edge_type: "deletes"` from page → entity
 
 Without these, design produces a pretty shell with broken buttons. With them, design produces a working app. Skip them and Phase 5 turns into a manual rewiring slog.
+
+### Don't redeclare entities in every journey
+
+If `users` is referenced from your Onboarding journey AND your Settings journey, declare its `columns_json` ONCE (in whichever journey owns it conceptually) and reference it by name from the others. The pooling logic dedupes by entity name; if two journeys both declare full columns and they don't match, you get a `column_conflicts` warning in `get_journey_for_design` output — fix it before moving to design.
 
 ### Read the plan first
 
