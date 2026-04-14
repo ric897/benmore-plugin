@@ -147,6 +147,15 @@ When approved: `save_plan(... status: "approved")`.
 
 **Goal:** Model every user flow as a journey graph. This is the spec — pages, entities, roles, transitions.
 
+**Critical: include data-flow edges, not just navigation edges.** The design phase reads these to wire forms, queries, and links automatically. Every page that touches an entity needs the right edge:
+
+- Page creates rows → `edge_type: "creates"` from page → entity
+- Page updates rows → `edge_type: "updates"` from page → entity
+- Page reads rows → `edge_type: "reads"` from page → entity (this is what makes the design phase generate `<query>` blocks)
+- Page deletes rows → `edge_type: "deletes"` from page → entity
+
+Without these, design produces a pretty shell with broken buttons. With them, design produces a working app. Skip them and Phase 5 turns into a manual rewiring slog.
+
 ### Read the plan first
 
 Read `docs/03-tech-plan.md` via `mcp__benmore__describe(kind: "documents", app)` — its data model sketch directly seeds your journey entity nodes. Don't invent new entities; use what the plan said.
@@ -210,7 +219,29 @@ Iterate via additional `apply_design_kit` calls (it accepts partial file lists �
 
 ### 4b: Page compositions
 
-Once kit approved, call `mcp__benmore__write_design_pages(app, pages)` with full `<page>...</page>` HTML for every journey page. Use `<query mock="N" from="entity">` so the prototypes render with realistic mock data.
+**Before you write a single line of page HTML, do this orientation pass IN PARALLEL:**
+
+1. `mcp__benmore__describe(kind: "documents", app)` then read each plan doc (`docs/01-brief`, `docs/03-tech-plan`, `docs/04-inspiration`)
+2. `mcp__benmore__get_journey_for_design(app)` — gives you pages grouped by role, entities with full column schemas, and which pages touch which entities (the data-flow edges from Phase 3)
+3. **Read the framework docs you'll need to wire the pages:**
+   - Resource `benmore://docs/llm-guide` — full template syntax, every directive, every page attribute
+   - Resource `benmore://docs/components` — every available component type
+   - Resource `benmore://docs/capability-map` — what features are available (audit, encryption, soft delete, real-time, etc.) so you know what to lean on
+
+**Then write FULLY FUNCTIONAL pages.** Treat the design+journey+docs as the spec — like a Figma + a data model + the framework manual. The pages you produce should WORK on first build, not be visual decoration that needs Phase-5+ rewiring.
+
+**Real means real.** Every interactive element ships with its directive:
+
+- `+ New X` button → `<form :create="X" hx-target="#modal">…fields…<button>Create</button></form>` (or inline form on the page itself)
+- Edit a field → `<form :patch="/api/X/{{id}}" :set="status='done'">` or per-field input
+- Delete → `<button :delete="X" :id="{{id}}" :confirm="Delete this?">`
+- Validation → `:validate="required,email,minlen:8"` on form inputs
+- List rows that link to detail → `<tr onclick="location='/X?id={{id}}'">` (Benmore param-route convention; the file is `X-param_id.html`)
+- Search → `<form method="GET" action="/X"><input name="q" placeholder="Search…"></form>` then `<query from="X" where="name LIKE '%{{param_q}}%'">`
+- Read lists → `<query from="X" pick="..." where="user_id={{user_id}}" as="rows">{{#rows}}…{{/rows}}{{^rows}}<empty-state />{{/rows}}</query>` (use the journey's `reads` edges to know which entity each page queries)
+- Mock previews → only inside `<query mock="5" …>` so the canvas renders with sample data; the directive itself is real
+
+If you find yourself writing `<button>+ New X</button>` with no directive, STOP — that's a placeholder, and the user will catch it the moment they click. Wire it now. Same rule for every link, every form, every search input.
 
 **MANDATORY: After EVERY `write_design_pages` call (or any batch of `save_page_design` edits), IMMEDIATELY call `mcp__benmore__get_journey_design_drift(app)` BEFORE replying to the user.** Surface any blocking issues in your reply. Don't wait for the user to ask. If drift shows ANY blocking issues, fix them before the STOP — don't ship a known-broken state to the review.
 
