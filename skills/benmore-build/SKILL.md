@@ -212,6 +212,17 @@ Iterate via additional `apply_design_kit` calls (it accepts partial file lists �
 
 Once kit approved, call `mcp__benmore__write_design_pages(app, pages)` with full `<page>...</page>` HTML for every journey page. Use `<query mock="N" from="entity">` so the prototypes render with realistic mock data.
 
+**MANDATORY: After EVERY `write_design_pages` call (or any batch of `save_page_design` edits), IMMEDIATELY call `mcp__benmore__get_journey_design_drift(app)` BEFORE replying to the user.** Surface any blocking issues in your reply. Don't wait for the user to ask. If drift shows ANY blocking issues, fix them before the STOP — don't ship a known-broken state to the review.
+
+**MANDATORY syntax rules for page HTML — get these wrong and the page renders blank or as raw HTML in the user's browser:**
+
+- Include partials with `<include src="partials/foo.html" />` — NOT `{{> foo}}` (Mustache hash-syntax). Benmore is NOT Handlebars/Mustache for partials.
+- Always wrap the content in `<page title="..." layout="app">` (or `layout="none"` for landing/auth pages).
+- Inside the page body, the layout's `{{content}}` slot receives whatever you put inside `<page>...</page>`.
+- Templates use `{{var}}` (escaped) or `{{{var}}}` (sanitized) for interpolation. Loops are `{{#list}}...{{/list}}`. Conditionals are `{{#if cond}}...{{/if}}`.
+- URL params are `{{param_name}}` — NOT `{{name}}`. (e.g., for route `/student?id=X`, use `{{param_id}}`, not `{{id}}`.)
+- For dynamic detail-page routes, name the file `<entity>-param_<key>.html` so the path resolver picks it up.
+
 **STOP:**
 
 > "14 prototype pages written. **Click through the top 3:**
