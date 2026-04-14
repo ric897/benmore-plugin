@@ -254,7 +254,9 @@ When approved: `mcp__benmore__set_build_phase(app, phase: "build")`.
 `mcp__benmore__build_app(app, generate_hooks: false)`. This:
 - Generates `schema.sql` from journey entity nodes (their `columns_json`)
 - Promotes `_design/*.html` → app root (real routes — `/dashboard`, `/pipeline`, etc., live with auth + scoping)
+- Auto-injects `auth="required"` on pages whose journey role is set (without this, framework skips creating `_benmore_users` and signup silently 404s)
 - Hot-reloads the draft
+- **Bidirectional sync**: if a file at app root is newer than its `_design/` counterpart (because you edited it directly post-build), the newer version wins. Returns a `preserved_from_root[]` list of files whose changes were preserved.
 
 ### Drift check
 
@@ -271,6 +273,28 @@ Call `mcp__benmore__get_journey_design_drift(app)` after build. Should be 0 bloc
 > Tell me what breaks or what's off. When everything works, say **'ship to prod'** and I'll merge."
 
 When user says ship: `mcp__benmore__merge_branch(app, from: "draft", to: "prod")`.
+
+---
+
+## Phase 5+ iteration (after first build_app succeeded)
+
+Once `build_app` has run and the real app is live, the user will report things like "the button color is wrong on the dashboard" or "add a field to the signup form." **Do NOT send these edits back through `_design/` → `build_app` → hot-reload.** That's 2–3 extra calls, confuses the URL model (`/_design/p/*` vs `/dashboard`), and makes user wait unnecessarily.
+
+**Correct path for post-build edits:** `mcp__benmore__write_file(app, branch, path: "dashboard.html", content: "...")`. Hot-reload is automatic — the change is live at `/dashboard` in ~1 second.
+
+Benmore keeps the two sides in sync: when you edit a file at app root directly, the NEXT `build_app` call will see the root is newer and preserve your change (not overwrite it). The opposite is also true — if you go back to `_design/` to propose a larger redesign, `build_app` promotes that forward.
+
+When to prefer each:
+
+| Edit type | Use | Why |
+|---|---|---|
+| Fix a button color, tweak a label, fix a typo | `write_file` on app root | 1 call, ~1s hot-reload, no divergence risk |
+| Fix a form bug (missing field, wrong action) | `write_file` on app root | Same — surgical edit, test immediately |
+| Add a whole new page | `save_page_design` + `build_app` | Goes through the design canvas so user can review |
+| Big visual redesign (change kit) | `apply_design_kit` + `build_app` | Touches partials globally; redesign canvas is the right surface |
+| Add/remove an entity | `apply(ops: [{action: add_journey_node}])` + `build_app` | Schema change requires journey update |
+
+The rule: **if you're only touching ONE file and it's cosmetic or a bug fix, go direct. If you're touching structure (entities, routes, kits), go through the canvas.**
 
 ---
 
