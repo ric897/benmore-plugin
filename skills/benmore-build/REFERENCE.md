@@ -231,6 +231,7 @@ myapp/
 ### Frequently used narrow tools
 - App: `create_app`, `get_app_map`, `search_app`, `get_route`
 - Files: `read_file`, `write_file`, `get_schema`
+- Data: `list_tables`, `get_counts`, `query_db`, `reset_and_seed` (draft only — wipes user tables + re-runs seeds.sql)
 - Branch: `create_branch`, `list_branches`, `merge_branch`, `delete_branch`, `revert_branch`, `list_versions`, `get_version_diff`
 - Journey: `create_journey`, `get_journey`, `get_journey_for_design`, `add_journey_node`, `add_journey_edge`, `update_journey_node`, `update_journey_edge`, `delete_journey_node`, `delete_journey_edge`
 - Design: `apply_design_kit`, `get_page_designs`, `save_page_design`, `save_page_designs`, `write_design_pages`, `get_journey_design_drift`
