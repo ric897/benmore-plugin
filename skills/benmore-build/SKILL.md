@@ -214,14 +214,18 @@ Once kit approved, call `mcp__benmore__write_design_pages(app, pages)` with full
 
 **MANDATORY: After EVERY `write_design_pages` call (or any batch of `save_page_design` edits), IMMEDIATELY call `mcp__benmore__get_journey_design_drift(app)` BEFORE replying to the user.** Surface any blocking issues in your reply. Don't wait for the user to ask. If drift shows ANY blocking issues, fix them before the STOP — don't ship a known-broken state to the review.
 
-**MANDATORY syntax rules for page HTML — get these wrong and the page renders blank or as raw HTML in the user's browser:**
+**MANDATORY syntax rules for page HTML — get these wrong and the page renders blank / raw / 404s on login:**
 
 - Include partials with `<include src="partials/foo.html" />` — NOT `{{> foo}}` (Mustache hash-syntax). Benmore is NOT Handlebars/Mustache for partials.
 - Always wrap the content in `<page title="..." layout="app">` (or `layout="none"` for landing/auth pages).
+- **Any page that should require login MUST have `auth="required"` on its `<page>` tag.** This is load-bearing: if NO page in the app has `auth="required"`, the framework skips creating `_benmore_users` / `_benmore_sessions` tables AND skips registering the `/login` + `/signup` POST handlers. Signup forms will silently 404 on submit. Rule: if the journey node for this page has a `role`, the page MUST have `auth="required"`. `build_app` will auto-inject this during promotion as a safety net, but include it in your source HTML so what you ship matches what's live.
+- Auth-page-type pages (login, signup, forgot-password, reset-password) need `type="login"` / `type="signup"` / etc. on the `<page>` tag — this tells Benmore to wire them to the auth handlers. WITHOUT this attribute, the form is just a decorative form, the POST has nowhere to go.
+- Signup + login forms need: `<form method="POST" action="/signup">` (or `/login`), a hidden `csrf_token` field: `<input type="hidden" name="csrf_token" value="{{csrf_token}}">`, a display slot for auth errors: `{{#if param_error}}<div class="error">{{param_error}}</div>{{/if}}`, and `name=` attributes on every input.
 - Inside the page body, the layout's `{{content}}` slot receives whatever you put inside `<page>...</page>`.
 - Templates use `{{var}}` (escaped) or `{{{var}}}` (sanitized) for interpolation. Loops are `{{#list}}...{{/list}}`. Conditionals are `{{#if cond}}...{{/if}}`.
 - URL params are `{{param_name}}` — NOT `{{name}}`. (e.g., for route `/student?id=X`, use `{{param_id}}`, not `{{id}}`.)
 - For dynamic detail-page routes, name the file `<entity>-param_<key>.html` so the path resolver picks it up.
+- `auth.redirect` in `app.yaml` MUST point to an existing authed page (e.g., `/dashboard`). Don't point it at `/` if `/` is your marketing landing — successful logins will bounce the user back to the landing and look broken.
 
 **STOP:**
 
